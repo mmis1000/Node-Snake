@@ -1,8 +1,9 @@
-/* global $, jQuery */
+/* global $, jQuery, io, Chunk */
 var canvas = $('#game').get(0);
 var ctx = canvas.getContext('2d');
 
 ;(function (window, r) {
+    /* global Render, FPSMeter */
     var requestAnimationFrame = window.requestAnimationFrame;
     var cancelAnimationFrame = window.cancelAnimationFrame;
     function FrameInstance(cb, offset) {
@@ -76,8 +77,11 @@ var timer = Render.getAnimate(function (time) {
     // console.log(time);
     ctx.fillStyle = "#777777"
     ctx.fillRect(0, 0, 640, 640);
-    
-    ctx.drawImage(background, (time % 800) / 40 - 20, (time % 800) / 40 - 20);
+    if (!renderer) {
+        ctx.drawImage(background, (time % 800) / 40 - 20, (time % 800) / 40 - 20);
+    } else {
+        renderer.draw();
+    }
     
 })
 timer.createMonitor({
@@ -86,11 +90,72 @@ timer.createMonitor({
 	heat: 1
 });
 
-var game = io.connect('/game')
+var map = null;
+var renderer = null;
+var game = io.connect('/game');
+var start = null;
+var currentPosition = null;
+var nextVec = [1, 0];
+
 game.on('welcome', function (id) {
     console.log('connected to server with id ' + id);
     game.emit('pre-start');
 })
+game.on('map_info', function (info) {
+    console.log('got map info and chunk size, start to load map', info);
+    start = Date.now();
+    map = new Map(info.chunkWidth, info.chunkHeight);
+    renderer = new Renderer(canvas, map, {x: 0, y: 0});
+})
+game.on('chunk', function (chunk) {
+    console.log('got map chunk', chunk);
+    chunk = Chunk.fromJSON(chunk);
+    map.setChunk(chunk.x, chunk.y, chunk);
+})
 game.on('start', function (data) {
-    console.log('game started', data);
+    currentPosition = data;
+    renderer.setOrigin(data);
+    console.log('game started, done loading chunk used ' + (Date.now() - start) + ' ms', data);
+    startMove()
+})
+
+function startMove() {
+    setInterval(function () {
+        // var nextVec= null;
+        var extend = false;
+        /*
+        if (Math.random() > 0.5) {
+            nextVec = [0, 1];
+        } else {
+            nextVec = [1, 0];
+        }*/
+        if (Math.random() > 0.5) {
+            extend = true;
+        }
+        currentPosition = {
+            x: currentPosition.x + nextVec[0],
+            y: currentPosition.y + nextVec[1]
+        };
+        renderer.setOrigin(currentPosition);
+        game.emit('move', currentPosition, extend)
+    }, 200)
+}
+
+
+$(document).keydown(function (ev) {
+  switch(ev.which) {
+    case 38: 
+      nextVec = [0, -1];
+      break
+    case 40: 
+      nextVec = [0, 1];
+      break
+    case 37: 
+      nextVec = [-1, 0];
+      break
+    case 39: 
+      nextVec = [1, 0];
+      break;
+    default:
+  }
 })
