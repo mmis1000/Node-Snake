@@ -1,6 +1,22 @@
+var VERSION = 1;
+
 /* global $, jQuery, io, Chunk */
 var canvas = $('#game').get(0);
 var ctx = canvas.getContext('2d');
+
+var windowWidth = $(window).width();
+var windowHeight = $(window).height();
+canvas.width = Math.floor(windowWidth);
+canvas.height = Math.floor(windowHeight);
+console.log(windowWidth, windowHeight)
+
+$(canvas).css({
+    position: 'fixed',
+    left: '0px',
+    top: '0px',
+    right: '0px',
+    bottom: '0px'
+})
 
 ;(function (window, r) {
     /* global Render, FPSMeter */
@@ -80,7 +96,7 @@ var timer = Render.getAnimate(function (time) {
     if (!renderer) {
         ctx.drawImage(background, (time % 800) / 40 - 20, (time % 800) / 40 - 20);
     } else {
-        renderer.draw();
+        renderer.draw(time);
     }
     
 })
@@ -99,7 +115,7 @@ var nextVec = [1, 0];
 
 game.on('welcome', function (id) {
     console.log('connected to server with id ' + id);
-    game.emit('pre-start');
+    game.emit('pre-start', VERSION);
 })
 game.on('map_info', function (info) {
     console.log('got map info and chunk size, start to load map', info);
@@ -108,19 +124,19 @@ game.on('map_info', function (info) {
     renderer = new Renderer(canvas, map, {x: 0, y: 0});
 })
 game.on('chunk', function (chunk) {
-    console.log('got map chunk', chunk);
+    // console.log('got map chunk', chunk);
     chunk = Chunk.fromJSON(chunk);
     map.setChunk(chunk.x, chunk.y, chunk);
 })
 game.on('start', function (data) {
     currentPosition = data;
-    renderer.setOrigin(data);
+    renderer.setOrigin(data, true);
     console.log('game started, done loading chunk used ' + (Date.now() - start) + ' ms', data);
     startMove()
 })
 
 function startMove() {
-    setInterval(function () {
+    var interval = setInterval(function () {
         // var nextVec= null;
         var extend = false;
         /*
@@ -129,13 +145,31 @@ function startMove() {
         } else {
             nextVec = [1, 0];
         }*/
-        if (Math.random() > 0.5) {
-            extend = true;
-        }
+        /*if (Math.random() > 0.5) {
+            extend = false;
+        }*/
         currentPosition = {
             x: currentPosition.x + nextVec[0],
             y: currentPosition.y + nextVec[1]
         };
+        
+        var chunkIndex = map.getChunkIndex(currentPosition.x, currentPosition.y);
+        
+        var nextSlot = map
+            .getChunk(chunkIndex.x, chunkIndex.y)
+            .getSlot(chunkIndex.offsetX, chunkIndex.offsetY)
+        
+        if (nextSlot.isSolid()) {
+            clearInterval(interval);
+            game.emit('dead');
+            game.emit('pre-start', VERSION);
+            return;
+        }
+        
+        if (nextSlot.isUsed()) {
+            extend = true;
+        }
+        
         renderer.setOrigin(currentPosition);
         game.emit('move', currentPosition, extend)
     }, 200)

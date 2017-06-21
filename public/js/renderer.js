@@ -19,6 +19,9 @@ function Renderer(canvas, map, origin, slotSize) {
     // a object looks like {x: 0, y : 0} in slot
     this.origin = origin;
     
+    this.currentPosition = origin;
+    this.oldOrigin = origin;
+    
     this.init();
 }
 
@@ -44,16 +47,46 @@ Renderer.prototype.init = function () {
     backgroundCtx.fillRect(0, 0, background.width, 2);
 }
 
-Renderer.prototype.setOrigin = function setOrigin(origin) {
+Renderer.prototype.setOrigin = function setOrigin(origin, flush) { 
+    if (flush) {
+        this.currentPosition = origin;
+    }
+    this.currentPosition = this.currentPosition || origin;
+    this.oldOrigin = this.currentPosition;
     this.origin = origin;
+    
+    if (this.time) {
+        this.animateStartTime = this.time;
+        this.animateEndTime = this.time + 200;
+    }
 }
 
-Renderer.prototype.draw = function (origin) {
-    if (origin) {
-        this.origin = origin;
-    } else {
-        origin = this.origin;
+Renderer.prototype.draw = function (time) {
+    this.time = time;
+    
+    if (!this.animateStartTime) {
+        this.animateStartTime = this.time
+        this.animateEndTime = this.time + 200;
     }
+    
+    var origin = this.origin;
+    
+    this.currentPosition = {
+        x: (this.oldOrigin.x * (this.animateEndTime - time) + this.origin.x * (time - this.animateStartTime)) / 200,
+        y: (this.oldOrigin.y * (this.animateEndTime - time) + this.origin.y * (time - this.animateStartTime)) / 200
+    }
+    
+    var positionOffset = {
+        x: this.currentPosition.x - this.origin.x,
+        y: this.currentPosition.y - this.origin.y
+    }
+    
+    /*console.log(JSON.stringify({
+        positionOffset,
+        currentPosition: this.currentPosition,
+        remain:this.animateEndTime - time
+    }), 0, 4)*/
+    
     var x = origin.x;
     var y = origin.y;
     
@@ -96,8 +129,8 @@ Renderer.prototype.draw = function (origin) {
                 y: chunkIndex.y + index[1]
             },
             {
-                x: screenCenterOffsetX - centerChunkOffsetX + index[0] * this.chunkWidth * this.slotSize,
-                y: screenCenterOffsetY - centerChunkOffsetY + index[1] * this.chunkWidth * this.slotSize
+                x: screenCenterOffsetX - centerChunkOffsetX + (index[0] * this.chunkWidth - positionOffset.x) * this.slotSize,
+                y: screenCenterOffsetY - centerChunkOffsetY + (index[1] * this.chunkWidth - positionOffset.y) * this.slotSize
             }
         )
     }.bind(this));
@@ -108,15 +141,23 @@ Renderer.prototype.drawChunk = function (chunkIndex, canvasOffset) {
     var chunk = this.map.getChunk(chunkIndex.x, chunkIndex.y);
     this.ctx.drawImage(this.background, canvasOffset.x, canvasOffset.y);
     if (!chunk) {
+        this.ctx.fillStyle = "rgba(127, 127, 127, 0.5)"
+        this.ctx.fillRect(
+            canvasOffset.x, 
+            canvasOffset.y, 
+            this.slotSize * this.chunkWidth, 
+            this.slotSize * this.chunkHeight
+        );
         console.log('chunk no loaded yet', chunkIndex);
         return;
     }
-    this.ctx.fillStyle = "#000000";
     
     for (var i = 0; i < this.chunkWidth; i++) {
         for (var j = 0; j < this.chunkHeight; j++) {
             slot = chunk.getSlot(i, j);
-            if (slot.isSolid()) {
+            if (slot.isUsed()) {
+                this.ctx.fillStyle = slot.color;
+                
                 this.ctx.fillRect(
                     canvasOffset.x + this.slotSize * i + 2,
                     canvasOffset.y + this.slotSize * j + 2,
