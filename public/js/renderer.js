@@ -1,4 +1,4 @@
-/* global $, jQuery */
+/* global $, jQuery, tiles */
 function Renderer(canvas, map, origin, slotSize) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
@@ -22,6 +22,10 @@ function Renderer(canvas, map, origin, slotSize) {
     this.currentPosition = origin;
     this.oldOrigin = origin;
     
+    this.animateStartTime = null;
+    this.animateEndTime = null;
+    this.animateLength = 200;
+    
     this.init();
 }
 
@@ -35,6 +39,23 @@ Renderer.prototype.init = function () {
     backgroundCtx.fillStyle = "#777777";
     backgroundCtx.fillRect(0, 0, this.chunkWidth * this.slotSize, this.chunkHeight * this.slotSize);
     
+    tiles.grass.load().then(function () {
+        for (var i = 0; i < this.chunkWidth; i++) {
+            for (var j = 0; j < this.chunkHeight; j++) {
+                // backgroundCtx.fillRect(this.slotSize * i + 2, this.slotSize * j + 2, this.slotSize - 4, this.slotSize - 4)
+                tiles.grass.draw(
+                    backgroundCtx, 
+                    this.slotSize * i, this.slotSize * j,
+                    this.slotSize * (i + 1), this.slotSize * (j + 1),
+                    0,
+                    Math.random()
+                )
+            }
+        }
+        backgroundCtx.fillRect(0, 0, 2, background.height);
+        backgroundCtx.fillRect(0, 0, background.width, 2);
+    }.bind(this))
+    /*
     backgroundCtx.fillStyle = "#ffffff";
     for (var i = 0; i < this.chunkWidth; i++) {
         for (var j = 0; j < this.chunkHeight; j++) {
@@ -45,6 +66,7 @@ Renderer.prototype.init = function () {
     backgroundCtx.fillStyle = "#ff0000";
     backgroundCtx.fillRect(0, 0, 2, background.height);
     backgroundCtx.fillRect(0, 0, background.width, 2);
+    */
 }
 
 Renderer.prototype.setOrigin = function setOrigin(origin, flush) { 
@@ -57,7 +79,7 @@ Renderer.prototype.setOrigin = function setOrigin(origin, flush) {
     
     if (this.time) {
         this.animateStartTime = this.time;
-        this.animateEndTime = this.time + 200;
+        this.animateEndTime = this.time + this.animateLength;
     }
 }
 
@@ -66,20 +88,35 @@ Renderer.prototype.draw = function (time) {
     
     if (!this.animateStartTime) {
         this.animateStartTime = this.time
-        this.animateEndTime = this.time + 200;
+        this.animateEndTime = this.time + this.animateLength;
     }
     
     var origin = this.origin;
     
     this.currentPosition = {
-        x: (this.oldOrigin.x * (this.animateEndTime - time) + this.origin.x * (time - this.animateStartTime)) / 200,
-        y: (this.oldOrigin.y * (this.animateEndTime - time) + this.origin.y * (time - this.animateStartTime)) / 200
+        x: (this.oldOrigin.x * (this.animateEndTime - time) + this.origin.x * (time - this.animateStartTime)) / this.animateLength,
+        y: (this.oldOrigin.y * (this.animateEndTime - time) + this.origin.y * (time - this.animateStartTime)) / this.animateLength
     }
     
-    var positionOffset = {
-        x: this.currentPosition.x - this.origin.x,
-        y: this.currentPosition.y - this.origin.y
+    var positionOffset;
+    
+    if (this.animateEndTime + this.animateLength > this.time) {
+        this.currentPosition = {
+            x: (this.oldOrigin.x * (this.animateEndTime - time) + this.origin.x * (time - this.animateStartTime)) / this.animateLength,
+            y: (this.oldOrigin.y * (this.animateEndTime - time) + this.origin.y * (time - this.animateStartTime)) / this.animateLength
+        }
+        
+        positionOffset = {
+            x: this.currentPosition.x - this.origin.x,
+            y: this.currentPosition.y - this.origin.y
+        }
+    } else {
+        positionOffset = {
+            x: 0,
+            y: 0
+        }
     }
+    
     
     /*console.log(JSON.stringify({
         positionOffset,
@@ -131,12 +168,22 @@ Renderer.prototype.draw = function (time) {
             {
                 x: screenCenterOffsetX - centerChunkOffsetX + (index[0] * this.chunkWidth - positionOffset.x) * this.slotSize,
                 y: screenCenterOffsetY - centerChunkOffsetY + (index[1] * this.chunkWidth - positionOffset.y) * this.slotSize
-            }
+            },
+            time
         )
     }.bind(this));
 }
 
-Renderer.prototype.drawChunk = function (chunkIndex, canvasOffset) {
+Renderer.prototype.drawChunk = function (chunkIndex, canvasOffset, time) {
+    var width = this.chunkWidth * this.slotSize;
+    
+    if (!Renderer.crossOver(
+        0, 0, this.viewWidth, this.viewHeight, 
+        canvasOffset.x, canvasOffset.y, canvasOffset.x + width, canvasOffset.y + width)
+    ) {
+        return;
+    }
+    
     var slot;
     var chunk = this.map.getChunk(chunkIndex.x, chunkIndex.y);
     this.ctx.drawImage(this.background, canvasOffset.x, canvasOffset.y);
@@ -156,16 +203,62 @@ Renderer.prototype.drawChunk = function (chunkIndex, canvasOffset) {
         for (var j = 0; j < this.chunkHeight; j++) {
             slot = chunk.getSlot(i, j);
             if (slot.isUsed()) {
-                this.ctx.fillStyle = slot.color;
-                
-                this.ctx.fillRect(
-                    canvasOffset.x + this.slotSize * i + 2,
-                    canvasOffset.y + this.slotSize * j + 2,
-                    this.slotSize - 4,
-                    this.slotSize - 4
-                )
+                if (slot.type === 'stone') {
+                    tiles.stone.draw(
+                        this.ctx,
+                        canvasOffset.x + this.slotSize * i, canvasOffset.y + this.slotSize * j,
+                        canvasOffset.x + this.slotSize * (i + 1), canvasOffset.y + this.slotSize * (j + 1),
+                        time,
+                        ((3 * i + 7 * j) % this.chunkWidth) / this.chunkWidth
+                    )
+                } else if (slot.type === 'snake') {
+                    tiles.snake.draw(
+                        this.ctx,
+                        canvasOffset.x + this.slotSize * i, canvasOffset.y + this.slotSize * j,
+                        canvasOffset.x + this.slotSize * (i + 1), canvasOffset.y + this.slotSize * (j + 1),
+                        time,
+                        0
+                    )
+                } else if (slot.type === 'item') {
+                    tiles.coin.draw(
+                        this.ctx,
+                        canvasOffset.x + this.slotSize * i, canvasOffset.y + this.slotSize * j,
+                        canvasOffset.x + this.slotSize * (i + 1), canvasOffset.y + this.slotSize * (j + 1),
+                        time + ((3 * i + 7 * j) % this.chunkWidth) / this.chunkWidth * 1000,
+                        ((3 * i + 7 * j) % this.chunkWidth) / this.chunkWidth
+                    )
+                } else {
+                    this.ctx.fillStyle = slot.color;
+                    
+                    this.ctx.fillRect(
+                        canvasOffset.x + this.slotSize * i + 2,
+                        canvasOffset.y + this.slotSize * j + 2,
+                        this.slotSize - 4,
+                        this.slotSize - 4
+                    )
+                }
             }
         }
     }
     
+}
+
+Renderer.crossOver = function crossOver(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2) {
+    if (ax1 > ax2) {
+        [ax1, ax2] = [ax2, ax1]
+    }
+    
+    if (ay1 > ay2) {
+        [ay1, ay2] = [ay2, ay1]
+    }
+    
+    if (bx1 > bx2) {
+        [bx1, bx2] = [bx2, bx1]
+    }
+    
+    if (by1 > by2) {
+        [by1, by2] = [by2, by1]
+    }
+    
+    return bx2 > ax1 && ax2 > bx1 && by2 > ay1 && ay2 > by1;
 }

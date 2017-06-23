@@ -4,6 +4,15 @@ var VERSION = 1;
 var canvas = $('#game').get(0);
 var ctx = canvas.getContext('2d');
 
+/*
+$(canvas).css({
+    position: 'fixed',
+    left: '0px',
+    top: '0px',
+    right: '0px',
+    bottom: '0px'
+})
+*/
 var windowWidth = $(window).width();
 var windowHeight = $(window).height();
 canvas.width = Math.floor(windowWidth);
@@ -121,7 +130,7 @@ game.on('map_info', function (info) {
     console.log('got map info and chunk size, start to load map', info);
     start = Date.now();
     map = new Map(info.chunkWidth, info.chunkHeight);
-    renderer = new Renderer(canvas, map, {x: 0, y: 0});
+    renderer = new Renderer(canvas, map, {x: 0, y: 0}, 30);
 })
 game.on('chunk', function (chunk) {
     // console.log('got map chunk', chunk);
@@ -132,11 +141,18 @@ game.on('start', function (data) {
     currentPosition = data;
     renderer.setOrigin(data, true);
     console.log('game started, done loading chunk used ' + (Date.now() - start) + ' ms', data);
-    startMove()
+    startMove();
 })
 
+var interval = null;
+var started = false;
+var paused = false;
+
 function startMove() {
-    var interval = setInterval(function () {
+    started = true;
+    
+    clearInterval(interval);
+    interval = setInterval(function () {
         // var nextVec= null;
         var extend = false;
         /*
@@ -159,11 +175,14 @@ function startMove() {
             .getChunk(chunkIndex.x, chunkIndex.y)
             .getSlot(chunkIndex.offsetX, chunkIndex.offsetY)
         
-        if (nextSlot.isSolid()) {
+        if (nextSlot.isSolid() && !window.god) {
             clearInterval(interval);
+            started = false;
             game.emit('dead');
             game.emit('pre-start', VERSION);
             return;
+        } else if (nextSlot.isSolid() && window.god){
+            return
         }
         
         if (nextSlot.isUsed()) {
@@ -176,20 +195,33 @@ function startMove() {
 }
 
 
-$(document).keydown(function (ev) {
-  switch(ev.which) {
-    case 38: 
-      nextVec = [0, -1];
-      break
-    case 40: 
-      nextVec = [0, 1];
-      break
-    case 37: 
-      nextVec = [-1, 0];
-      break
-    case 39: 
-      nextVec = [1, 0];
-      break;
-    default:
-  }
+$(document).keydown(function(ev) {
+    console.log(ev.which);
+
+    switch (ev.which) {
+        case 38:
+            nextVec = [0, -1];
+            break
+        case 40:
+            nextVec = [0, 1];
+            break
+        case 37:
+            nextVec = [-1, 0];
+            break
+        case 39:
+            nextVec = [1, 0];
+            break;
+        case 80: // p
+            if (!started) return;
+            if (!paused) {
+                paused = true;
+                clearTimeout(interval);
+            } else {
+                paused = false;
+                renderer.setOrigin(currentPosition, true); // claer the animate
+                startMove()
+            }
+            break
+        default:
+    }
 })

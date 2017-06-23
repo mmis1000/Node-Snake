@@ -1,4 +1,9 @@
 #game {
-    border: black solid 2px;
+    /*border: black solid 2px;*/
     display: block;
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    right: 0px;
+    bottom: 0px;
 }

@@ -6,15 +6,48 @@ module.exports = function gameConnection (app, io, config) {
     var sio = io.of('/game');
     var map = new Map(64, 64);
     
+    function setItemSlot(slot) {
+        slot.setUsed(true);
+        slot.color = hslToColor(Math.random(), 0.7, 0.3)
+        slot.type = "item";
+    }
+    
+    function setSolidSlot(slot) {
+        slot.setUsed(true);
+        slot.setSolid(true);
+        slot.color = '#000000';
+        slot.type = "stone";
+    }
+    
+    function setSnakeBody(socket, slot) {
+        slot.setSolid(true);
+        slot.setUsed(true);
+        slot.setBoolean('own-' + socket.playerId, true);
+        slot.display = 'snack-head-right'
+        slot.owner = socket.playerId;
+        slot.color = socket.color;
+        slot.type = "snake";
+    }
+    
+    function removeSnakeBody(socket, slot) {
+        slot.setSolid(false);
+        slot.setUsed(false);
+        slot.setBoolean('own-' + socket.playerId, false);
+        delete slot.display;
+        delete slot.owner;
+        delete slot.color;
+        delete slot.type;
+    }
+    
     map.on('new_chunk', function (chunk) {
         for (var i = 0; i < 200; i++) {
             var slot = chunk.tree.findEmptySlot()
             // slot.setSolid(true)
-            slot.setUsed(true);
-            slot.color = hslToColor(Math.random(), 0.7, 0.3)
-            if (Math.random() > 0.7) {
-                slot.setSolid(true);
-                slot.color = '#000000';
+
+            if (Math.random() < 0.7) {
+                setItemSlot(slot)
+            } else {
+                setSolidSlot(slot)
             }
         }
     })
@@ -25,25 +58,6 @@ module.exports = function gameConnection (app, io, config) {
         socket.snakeParts = [];
         socket.currentListenChunks = [];
         console.log( socket.playerId + ' connected');
-        
-        function setSnakeBody(slot) {
-            slot.setSolid(true);
-            slot.setUsed(true);
-            slot.setBoolean('own-' + socket.playerId, true);
-            slot.display = 'snack-head-right'
-            slot.owner = socket.playerId;
-            slot.color = socket.color;
-            slot.color = socket.color;
-        }
-        
-        function removeSnakeBody(slot) {
-            slot.setSolid(false);
-            slot.setUsed(false);
-            slot.setBoolean('own-' + socket.playerId, false);
-            delete slot.display;
-            delete slot.owner;
-            delete slot.color;
-        }
         
         socket.on('disconnect', function () {
             console.log(socket.playerId + ' disconnected');
@@ -75,7 +89,7 @@ module.exports = function gameConnection (app, io, config) {
             .getChunk(chunkIndex.x    , chunkIndex.y    )
             .getSlot(chunkIndex.offsetX, chunkIndex.offsetY);
             
-            setSnakeBody(initialSlot)
+            setSnakeBody(socket, initialSlot)
             
             var chunksToLoad = [
                 [chunkIndex.x - 1, chunkIndex.y - 1],
@@ -146,7 +160,7 @@ module.exports = function gameConnection (app, io, config) {
                 .getSlot(removedSnakePartIndex.offsetX, removedSnakePartIndex.offsetY);
                 // removedSnakePart
                 
-                removeSnakeBody(removedSnakePart)
+                removeSnakeBody(socket, removedSnakePart)
                 
                 console.log('brocasting changed chunk to room chunk_'  + removedSnakePartIndex.x + ',' + removedSnakePartIndex.y)
                 
@@ -157,14 +171,21 @@ module.exports = function gameConnection (app, io, config) {
                     console.log('sending chunk to room ' + 'chunk_' + room[0] + ',' + room[1])
                     sio.of('chunk_' + room[0] + ',' + room[1]).emit('chunk', map.getChunk(room[0], room[1]));
                 })*/
+            } else {
+                var newItemSlot = map
+                .getChunk(chunkIndex.x    , chunkIndex.y    )
+                .findEmptySlot();
+                
+                setItemSlot(newItemSlot)
             }
+            
             socket.snakeParts.push({x: position.x, y: position.y});
             
             var secondSlot = map
             .getChunk(chunkIndex.x    , chunkIndex.y    )
             .getSlot(chunkIndex.offsetX, chunkIndex.offsetY);
             
-            setSnakeBody(secondSlot)
+            setSnakeBody(socket, secondSlot)
             
             var roomChanged = false;
             chunksToLoad.forEach(function(targetRoom) {
@@ -212,6 +233,7 @@ module.exports = function gameConnection (app, io, config) {
         function killSnake() {
             
             console.log(socket.playerId + ' is dead')
+            var start = Date.now();
             var chunksToHandle = {};
             
             socket.snakeParts.forEach(function (part) {
@@ -230,13 +252,17 @@ module.exports = function gameConnection (app, io, config) {
             })
             
             chunks.forEach(function (chunk) {
-                chunk.tree.findAllNode('own-' + socket.playerId, true).forEach(removeSnakeBody)
+                chunk.tree.findAllNode('own-' + socket.playerId, true).forEach(removeSnakeBody.bind(null, socket))
                 
                 sio.to('chunk_' + chunk.x + ',' + chunk.y)
                     .emit('chunk', chunk);
             })
             
             socket.snakeParts = [];
+            
+            console.log('cleared up using ' + (Date.now() - start) + ' ms')
+            
+            socket.gameStarted = false;
         }
         
         socket.on('dead', killSnake)
