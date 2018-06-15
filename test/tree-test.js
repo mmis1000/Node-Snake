@@ -8,20 +8,39 @@ describe('Node', function() {
     var child;
     describe('#spawn', function () {
         it('should spawn a object', function () {
-            tree = new MapTree.Node();
+            var tree = new MapTree.Node();
             assert.typeOf(tree, 'object');
         });
     });
     describe('#addNode', function () {
         it('should able to add a node', function () {
-            child = new MapTree.EndNode;
+            var tree = new MapTree.Node();
+            var child = new MapTree.EndNode;
             tree.addNode(child);
             assert.equal(tree.counts.all, 1)
         });
     });
+    describe('#replaceNode', function () {
+        it('should able to replace a node', function () {
+            var tree = new MapTree.Node();
+            var childTobeRemoved, child;
+            
+            childTobeRemoved = new MapTree.EndNode;
+            childTobeRemoved.setBoolean('flag', true);
+            tree.addNode(childTobeRemoved);
+            
+            assert.equal(tree.counts.flag, 1)
+            
+            child = new MapTree.EndNode;
+            childTobeRemoved.replaceNode(child)
+            
+            assert.equal(tree.counts.flag, undefined)
+        });
+    });
     describe('#cauculate', function () {
         it('should cauculate the counts according to its child', function () {
-            child = new MapTree.EndNode;
+            var tree = new MapTree.Node();
+            var child = new MapTree.EndNode;
             child.setBoolean('flag', true);
             tree.addNode(child);
             assert.equal(tree.counts.flag, 1)
@@ -31,16 +50,16 @@ describe('Node', function() {
 
 
 describe('SnakeMapNode', function() {
-    var tree;
     var child;
     describe('#spawn', function () {
         it('should spawn a object', function () {
-            tree = new MapTree.SnakeMapNode();
+            var tree = new MapTree.SnakeMapNode();
             assert.typeOf(tree, 'object');
         });
     });
     describe('#addNode', function () {
         it('should able to add a slot', function () {
+            var tree = new MapTree.SnakeMapNode();
             child = new MapTree.SnakeMapEndNode;
             child.setUsed();
             child.id = 0;
@@ -49,15 +68,22 @@ describe('SnakeMapNode', function() {
     });
     describe('#cauculate', function () {
         it('should cauculate the used counts according to its child', function () {
+            var tree = new MapTree.SnakeMapNode();
+            child = new MapTree.SnakeMapEndNode;
+            child.setUsed();
+            child.id = 0;
+            tree.addNode(child);
             assert.equal(tree.counts.used, 1)
         });
     });
     describe('#add-more', function () {
-        it('should add another ' + (size - 2) + ' used slot and 1 unused slot', function () {
-            for (var i = 0; i < size - 3; i++) {
+        it('should add ' + (size - 1) + ' used slot and 1 unused slot, and find empty slot', function () {
+            var tree = new MapTree.SnakeMapNode();
+            
+            for (var i = 0; i < size - 1; i++) {
                 child = new MapTree.SnakeMapEndNode;
                 child.setUsed();
-                child.id = i + 1;
+                child.id = i;
                 tree.addNode(child, false);
             }
             
@@ -66,47 +92,101 @@ describe('SnakeMapNode', function() {
             child.id = 'target';
             tree.addNode(child, false);
             
-            child = new MapTree.SnakeMapEndNode;
-            child.setUsed();
-            tree.addNode(child, false);
-            
             tree.updateCount(true)
             assert.equal(tree.counts.all, size)
             assert.equal(tree.counts.used, size - 1)
-        });
-    });
-    describe('#find-empty', function () {
-        it('should find the empty slot', function () {
-            child = tree.findEmptySlot();
+            
+            var child = tree.findEmptySlot();
             assert.typeOf(child, 'object');
             assert.equal(child.id, 'target');
+            
         });
     });
     describe('#change-slot', function () {
         it('should able to change a slot to full slot', function () {
+            var tree = new MapTree.SnakeMapNode();
+            
+            for (var i = 0; i < size - 1; i++) {
+                child = new MapTree.SnakeMapEndNode;
+                child.setUsed();
+                child.id = i;
+                tree.addNode(child, false);
+            }
+            
+            child = new MapTree.SnakeMapEndNode;
+            child.setUsed(false);
+            child.id = 'target';
+            tree.addNode(child, false);
+            
+            tree.updateCount(true)
+            
+            var child = tree.findEmptySlot();
             child.counts.used = 1;
             child.updateTree()
+            
             assert.equal(tree.counts.all, size)
             assert.equal(tree.counts.used, size)
         });
     });
     describe('#change-slot', function () {
         it('should able to change a slot to empty slot', function () {
+            var tree = new MapTree.SnakeMapNode();
+            
+            for (var i = 0; i < size; i++) {
+                child = new MapTree.SnakeMapEndNode;
+                child.setUsed();
+                child.id = i;
+                tree.addNode(child, false);
+            }
+            
+            tree.updateCount(true)
+            
             child.setUsed(false);
-            child.updateTree()
             assert.equal(tree.counts.all, size)
             assert.equal(tree.counts.used, size - 1)
         });
     });
     describe('#find-all-slot', function () {
         it('should able to find all slot with given flag', function () {
+            var tree = new MapTree.SnakeMapNode();
+            
+            for (var i = 0; i < size - 1; i++) {
+                child = new MapTree.SnakeMapEndNode;
+                child.setUsed();
+                child.id = i;
+                tree.addNode(child, false);
+            }
+            
+            child = new MapTree.SnakeMapEndNode;
+            child.setUsed(false);
+            child.id = 'target';
+            tree.addNode(child, false);
+            
+            tree.updateCount(true)
+            
             var results = tree.findAllNode('used');
             assert.equal(results.length, size - 1)
         });
     });
     describe('#find-all-slot', function () {
         it('should able to find all slot with given flag, again', function () {
+            var tree = new MapTree.SnakeMapNode();
+            
+            for (var i = 0; i < size - 1; i++) {
+                child = new MapTree.SnakeMapEndNode;
+                child.setUsed();
+                child.id = i;
+                tree.addNode(child, false);
+            }
+            
+            child = new MapTree.SnakeMapEndNode;
+            child.setUsed(false);
+            child.id = 'target';
+            tree.addNode(child, false);
+            
+            tree.updateCount(true)
             tree.findEmptySlot().setUsed();
+        
             var results = tree.findAllNode('used');
             assert.equal(results.length, size)
         });

@@ -96,3 +96,5 @@ Tile.prototype.load = function load() {
         })
     }.bind(this))
 }
+
+module.exports = Tile;

@@ -1,4 +1,6 @@
 /* global Tile */
+var Tile = require("./tile")
+
 var tileSetImage = document.createElement('img');
 tileSetImage.src = '/img/tileset.png'
 
@@ -173,4 +175,218 @@ var tiles = {
             rate: 0
         }]
     }]),
+    snake_nx: new Tile(monsterImage, 1000, [{
+        time: 0,
+        positions: [{
+            x1: 48,
+            y1: 0,
+            x2: 64,
+            y2: 16,
+            map_x1: 48,
+            map_y1: 0,
+            map_x2: 64,
+            map_y2: 16,
+            rate: 0
+        }]
+    }, {
+        time: 0.25,
+        positions: [{
+            x1: 48,
+            y1: 16,
+            x2: 64,
+            y2: 32,
+            map_x1: 48,
+            map_y1: 16,
+            map_x2: 64,
+            map_y2: 32,
+            rate: 0
+        }]
+    }, {
+        time: 0.5,
+        positions: [{
+            x1: 48,
+            y1: 32,
+            x2: 64,
+            y2: 48,
+            map_x1: 48,
+            map_y1: 32,
+            map_x2: 64,
+            map_y2: 48,
+            rate: 0
+        }]
+    }, {
+        time: 0.75,
+        positions: [{
+            x1: 48,
+            y1: 48,
+            x2: 64,
+            y2: 64,
+            map_x1: 48,
+            map_y1: 48,
+            map_x2: 64,
+            map_y2: 64,
+            rate: 0
+        }]
+    }]),
+    snake_px: new Tile(monsterImage, 1000, [{
+        time: 0,
+        positions: [{
+            x1: 32,
+            y1: 0,
+            x2: 48,
+            y2: 16,
+            map_x1: 32,
+            map_y1: 0,
+            map_x2: 48,
+            map_y2: 16,
+            rate: 0
+        }]
+    }, {
+        time: 0.25,
+        positions: [{
+            x1: 32,
+            y1: 16,
+            x2: 48,
+            y2: 32,
+            map_x1: 32,
+            map_y1: 16,
+            map_x2: 48,
+            map_y2: 32,
+            rate: 0
+        }]
+    }, {
+        time: 0.5,
+        positions: [{
+            x1: 32,
+            y1: 32,
+            x2: 48,
+            y2: 48,
+            map_x1: 32,
+            map_y1: 32,
+            map_x2: 48,
+            map_y2: 48,
+            rate: 0
+        }]
+    }, {
+        time: 0.75,
+        positions: [{
+            x1: 32,
+            y1: 48,
+            x2: 48,
+            y2: 64,
+            map_x1: 32,
+            map_y1: 48,
+            map_x2: 48,
+            map_y2: 64,
+            rate: 0
+        }]
+    }]),
+    snake_ny: new Tile(monsterImage, 1000, [{
+        time: 0,
+        positions: [{
+            x1: 16,
+            y1: 0,
+            x2: 32,
+            y2: 16,
+            map_x1: 16,
+            map_y1: 0,
+            map_x2: 32,
+            map_y2: 16,
+            rate: 0
+        }]
+    }, {
+        time: 0.25,
+        positions: [{
+            x1: 16,
+            y1: 16,
+            x2: 32,
+            y2: 32,
+            map_x1: 16,
+            map_y1: 16,
+            map_x2: 32,
+            map_y2: 32,
+            rate: 0
+        }]
+    }, {
+        time: 0.5,
+        positions: [{
+            x1: 16,
+            y1: 32,
+            x2: 32,
+            y2: 48,
+            map_x1: 16,
+            map_y1: 32,
+            map_x2: 32,
+            map_y2: 48,
+            rate: 0
+        }]
+    }, {
+        time: 0.75,
+        positions: [{
+            x1: 16,
+            y1: 48,
+            x2: 32,
+            y2: 64,
+            map_x1: 16,
+            map_y1: 48,
+            map_x2: 32,
+            map_y2: 64,
+            rate: 0
+        }]
+    }]),
+    snake_py: new Tile(monsterImage, 1000, [{
+        time: 0,
+        positions: [{
+            x1: 0,
+            y1: 0,
+            x2: 16,
+            y2: 16,
+            map_x1: 0,
+            map_y1: 0,
+            map_x2: 16,
+            map_y2: 16,
+            rate: 0
+        }]
+    }, {
+        time: 0.25,
+        positions: [{
+            x1: 0,
+            y1: 16,
+            x2: 16,
+            y2: 32,
+            map_x1: 0,
+            map_y1: 16,
+            map_x2: 16,
+            map_y2: 32,
+            rate: 0
+        }]
+    }, {
+        time: 0.5,
+        positions: [{
+            x1: 0,
+            y1: 32,
+            x2: 16,
+            y2: 48,
+            map_x1: 0,
+            map_y1: 32,
+            map_x2: 16,
+            map_y2: 48,
+            rate: 0
+        }]
+    }, {
+        time: 0.75,
+        positions: [{
+            x1: 0,
+            y1: 48,
+            x2: 16,
+            y2: 64,
+            map_x1: 0,
+            map_y1: 48,
+            map_x2: 16,
+            map_y2: 64,
+            rate: 0
+        }]
+    }]),
 }
+
+module.exports = tiles;

@@ -83,6 +83,14 @@ Chunk.prototype.addSlot = function (x, y, slot, updateCount) {
     this.table[x][y] = slot;
     // this.tree.addNode(slot, updateCount)
 }
+Chunk.prototype.setSlot = function (x, y, slot, updateCount) {
+    if (arguments.length < 4) updateCount = true;
+    
+    // this.table[x][y].replaceNode(slot, updateCount)
+    
+    this.table[x] = this.table[x] || [];
+    this.table[x][y] = slot;
+}
 Chunk.prototype.init = function () {
     var i, j, node;
     for (i = 0; i < this.width; i++) {

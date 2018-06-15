@@ -1,7 +1,19 @@
-/* global $, jQuery, tiles */
+/* global $, jQuery */
+
+var constants = require("../../lib/constants");
+var tiles = require("./resource");
+
+function disableSmooth(ctx) {
+    ctx.mozImageSmoothingEnabled = false;
+    ctx.webkitImageSmoothingEnabled = false;
+    ctx.msImageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = false;
+}
+
 function Renderer(canvas, map, origin, slotSize) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
+    disableSmooth(this.ctx)
     
     this.map = map;
     
@@ -36,8 +48,10 @@ Renderer.prototype.init = function () {
     background.width = this.chunkWidth * this.slotSize;
     background.height = this.chunkHeight * this.slotSize;
     
-    backgroundCtx.fillStyle = "#777777";
+    backgroundCtx.fillStyle = "#007700";
     backgroundCtx.fillRect(0, 0, this.chunkWidth * this.slotSize, this.chunkHeight * this.slotSize);
+    
+    disableSmooth(this.backgroundCtx);
     
     tiles.grass.load().then(function () {
         for (var i = 0; i < this.chunkWidth; i++) {
@@ -52,8 +66,8 @@ Renderer.prototype.init = function () {
                 )
             }
         }
-        backgroundCtx.fillRect(0, 0, 2, background.height);
-        backgroundCtx.fillRect(0, 0, background.width, 2);
+        //backgroundCtx.fillRect(0, 0, 2, background.height);
+        //backgroundCtx.fillRect(0, 0, background.width, 2);
     }.bind(this))
     /*
     backgroundCtx.fillStyle = "#ffffff";
@@ -175,6 +189,7 @@ Renderer.prototype.draw = function (time) {
 }
 
 Renderer.prototype.drawChunk = function (chunkIndex, canvasOffset, time) {
+    /* global constants */
     var width = this.chunkWidth * this.slotSize;
     
     if (!Renderer.crossOver(
@@ -212,7 +227,26 @@ Renderer.prototype.drawChunk = function (chunkIndex, canvasOffset, time) {
                         ((3 * i + 7 * j) % this.chunkWidth) / this.chunkWidth
                     )
                 } else if (slot.type === 'snake') {
-                    tiles.snake.draw(
+                    var tile;
+                    switch(slot.direction) {
+                        case constants.directions.NX:
+                            tile = tiles.snake_nx;
+                            break;
+                        case constants.directions.NY:
+                            tile = tiles.snake_ny;
+                            break;
+                        case constants.directions.PX:
+                            tile = tiles.snake_px;
+                            break;
+                        case constants.directions.PY:
+                            tile = tiles.snake_py;
+                            break;
+                        default:
+                            console.error(slot.direction, slot)
+                    }
+                    
+                    
+                    tile.draw(
                         this.ctx,
                         canvasOffset.x + this.slotSize * i, canvasOffset.y + this.slotSize * j,
                         canvasOffset.x + this.slotSize * (i + 1), canvasOffset.y + this.slotSize * (j + 1),
@@ -262,3 +296,5 @@ Renderer.crossOver = function crossOver(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2) 
     
     return bx2 > ax1 && ax2 > bx1 && by2 > ay1 && ay2 > by1;
 }
+
+module.exports = Renderer;

@@ -7,12 +7,14 @@
     "test": "test"
   },
   "scripts": {
+    "webpack": "webpack --config webpack.config.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "chai": "^3.5.0"
+    "chai": "^3.5.0",
+    "webpack": "^3.1.0"
   },
   "dependencies": {
     "body-parser": "^1.15.0",
