@@ -6,6 +6,7 @@ var constants = require("../../lib/constants");
 var Renderer = require('./renderer');
 var canvas = $('#game').get(0);
 var ctx = canvas.getContext('2d');
+var Vue = require("../components/vue/dist/vue.common.js")
 
 var windowWidth = $(window).width();
 var windowHeight = $(window).height();
@@ -109,6 +110,21 @@ timer.createMonitor({
 	heat: 1
 });
 
+var status = new Vue({
+  el: '#status',
+  data: {
+    x: 'loading...',
+    y: 'loading...',
+    status: 'loading',
+    showHint: false
+  },
+  methods: {
+      toggleHint: function() {
+          this.showHint = !this.showHint
+      }
+  }
+})
+
 var map = null;
 var renderer = null;
 var game = io.connect('/game');
@@ -137,6 +153,7 @@ game.on('start', function (data) {
     currentDirection = data.direction;
     console.log('game started, done loading chunk used ' + (Date.now() - start) + ' ms', data);
     startMove();
+    status.status = 'play'
 })
 
 var interval = null;
@@ -204,7 +221,10 @@ function startMove() {
         }
         
         renderer.setOrigin(currentPosition);
-        game.emit('move', currentPosition, extend, currentDirection)
+        game.emit('move', currentPosition, extend, currentDirection);
+        
+        status.x = currentPosition.x
+        status.y = currentPosition.y
     }
 }
 
@@ -225,10 +245,12 @@ $(document).keydown(function(ev) {
         case 80: // pause
             if (!started) return;
             if (!paused) {
+                status.status = 'paused'
                 paused = true;
                 renderer.setOrigin(currentPosition, true); // cleer the animat
                 clearTimeout(interval);
             } else {
+                status.status = 'play'
                 paused = false;
                 renderer.setOrigin(currentPosition, true); // cleer the animate
                 startMove()
@@ -330,11 +352,13 @@ $('#game').on("touchstart", function(e) {
             // pause
         if (!started) return;
         if (!paused) {
+            status.status = 'paused'
             paused = true;
             renderer.setOrigin(currentPosition, true); // cleer the animat
             clearTimeout(interval);
         }
         else {
+            status.status = 'play'
             paused = false;
             renderer.setOrigin(currentPosition, true); // cleer the animate
             startMove()

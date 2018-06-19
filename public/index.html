@@ -12,6 +12,16 @@
     <body>
         <!--it works!!!-->
         <canvas width="640" height="640" id="game"></canvas>
+        <div id="status">
+            <div @click="toggleHint" style="cursor: pointer">
+                [click to {{showHint ? 'hide': 'show'}} hint]
+            </div>
+            <div v-if="showHint">
+                use ↑ ↓ ← → or swipe on screan to control <br>
+                use p or double tap on screan to play / pause
+            </div>
+            <div>x: {{x}}, y: {{y}}, status: {{status}}</div>
+        </div>
         <!--<div id="my-score">0</div>-->
         <!--<script type="text/javascript" src="js/map.js"></script>
         <script type="text/javascript" src="js/tile.js"></script>

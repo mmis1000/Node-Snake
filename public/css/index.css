@@ -8,6 +8,15 @@
     bottom: 0px;
 }
 
+#status {
+    position: fixed;
+    bottom: 0px;
+    left: 0px;
+    padding: 0.5em;
+    color: white;
+    background: rgba(0, 0, 0, 0.2);
+}
+
 canvas {
   image-rendering: optimizeSpeed;             /* Older versions of FF          */
   image-rendering: -moz-crisp-edges;          /* FF 6.0+                       */
