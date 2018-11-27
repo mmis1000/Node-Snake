@@ -6,6 +6,8 @@
      `-----'`--' `---'  `----'  `---'  `--'    `--'`-------' `------'
     ----------------------------------------------------------------- 
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/mmis1000/Node-Snake.svg)](https://greenkeeper.io/)
+
 
 Hi there! Welcome to Cloud9 IDE!
 
